@@ -3,18 +3,22 @@ import requests
 from bs4 import BeautifulSoup
 from IPython.display import Markdown, display
 
-# calling mistral model from local host. 
-def chat_completion(messages):
-    response = requests.post(
-        "http://localhost:11434/api/chat",
-        json= {
+def chat_completion(sys_prom, user_prom):
+    url = "http://localhost:11434/api/chat"
+    headers = {"Content-Type": "application/json"}
+    payload = {
             "model": "mistral",
-            "messages": messages,
+            "messages": [
+                        {"role": "system", "content": sys_prom},
+                        {"role": "user", "content": user_prom}
+            ],
             "stream": False
-        }
-        
-    )
+    }
+    
+    response = requests.post(url, data=json.dumps(payload), headers=headers)
+    
     data = response.json()
+    
                 
     return data['message']['content']
 
