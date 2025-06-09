@@ -67,5 +67,45 @@ def display_summary(url):
     summary = summarize(url)
     display(Markdown(summary))
 
+def chat_bot(messages):
+    import requests
+    import json
+
+    url = "http://localhost:11434/api/chat"
+    headers = {"Content-Type": "application/json"}
+    payload = {
+        "model": "mistral",
+        "messages": messages,
+        "stream": True
+    }
+
+    try:
+        response = requests.post(url, json=payload, headers=headers, stream=True)
+        for line in response.iter_lines():
+            if line:
+                chunk = line.decode('utf-8')
+                if chunk.startswith('data:'):
+                    chunk = chunk[5:].strip()
+                if chunk == "[DONE]":
+                    break
+                try:
+                    data = json.loads(chunk)
+                    content = data.get("message", {}).get("content", "")
+                    if content:
+                        yield content
+                except json.JSONDecodeError:
+                    yield f"[Invalid JSON]: {chunk}"
+    except Exception as e:
+        yield f"[Error]: {str(e)}"
+
 
 display_summary("https://cnn.com")
+
+# Stream chat
+messages = [
+    {"role": "system", "content": "You are a helpful assistant."},
+    {"role": "user", "content": "What's the capital of France?"}
+]
+
+for chunk in chat_bot(messages):
+    print(chunk, end='', flush=True)
